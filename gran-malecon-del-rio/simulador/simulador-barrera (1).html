@@ -161,7 +161,7 @@
             <span class="stat-name"><span class="dot" style="background:var(--error)"></span>Escapados</span>
             <span class="stat-num num-per" id="perN">0</span>
           </div>
-          <div class="veredicto" id="veredicto">Presiona <strong>Simular</strong> para lanzar los residuos.</div>
+          <div class="veredicto" id="veredicto"></strong></div>
         </div>
       </div>
     </div>
@@ -173,16 +173,14 @@
         <h2>Comparador de ángulos</h2>
         <p>Corre los cuatro ángulos con la misma corriente y cantidad para validar la hipótesis (≥ 20 puntos sobre los 90°).</p>
       </div>
-      <button class="btn btn-secundario" style="width:auto;white-space:nowrap" id="runComp">⚡ Comparar los 4</button>
+      <button class="btn btn-secundario" style="width:auto;white-space:nowrap" id="runComp">Comparar los 4</button>
     </div>
     <div id="compBody">
       <div class="hint">Presiona <b>Comparar los 4</b> para correr la prueba automática.</div>
     </div>
   </div>
 
-  <div class="nota">
-    <b>Sobre el modelo:</b> simulación conceptual en 2D, no una medición hidrodinámica. La barrera se ancla en el río y baja hasta la trampa en la orilla. Al chocar, el residuo se desliza a lo largo de la barrera hacia la orilla: la componente de velocidad <b>paralela</b> a la barrera lo canaliza, mientras la <b>normal</b> lo mantiene en contacto. Una barrera a 90° casi no tiene componente que canalice, así que los residuos se apilan y se desbordan aguas abajo. Los porcentajes ilustran el comportamiento de las fuerzas, no resultados experimentales medidos.
-  </div>
+ 
 
 </div>
 
@@ -195,8 +193,9 @@ const orillaX=70,rioIzq=orillaX,rioDer=W;
 const trapX=orillaX, trapY=H-70, trapR=42;
 const bAncX=orillaX, bAncY=trapY-8, largoBarrera=320;
 
-let angulo=45,velocidad=1.0,cantidad=60;
+let angulo=45,anguloObjetivo=45,velocidad=1.0,cantidad=60;
 let particulas=[],animando=false,rafId=null;
+let tiempoOla=0;
 
 function punta(){
   const rad=angulo*Math.PI/180;
@@ -265,7 +264,7 @@ function fondo(){
   for(let x=rioIzq+30;x<W;x+=55){
     ctx.beginPath();
     for(let y=0;y<H;y+=6){
-      const off=Math.sin((y*0.03)+(x*0.1)+(Date.now()*0.002))*3;
+      const off=Math.sin((y*0.03)+(x*0.1)+tiempoOla)*3;
       if(y===0)ctx.moveTo(x+off,y);else ctx.lineTo(x+off,y);
     }
     ctx.stroke();
@@ -278,14 +277,14 @@ function fondo(){
   for(let y=0;y<H;y+=14)ctx.fillRect(6,y,orillaX-16,5);
   ctx.save();ctx.fillStyle='#a08a52';ctx.font='700 10px Inter';
   ctx.translate(20,H-18);ctx.rotate(-Math.PI/2);
-  ctx.fillText('ORILLA · GRAN MALECÓN',0,0);ctx.restore();
+  ctx.fillText('GRAN MALECÓN DEL RIO',0,0);ctx.restore();
 }
 function dibujarTrampa(){
   ctx.beginPath();ctx.arc(trapX,trapY,trapR,0,Math.PI*2);
   ctx.fillStyle='rgba(34,197,94,0.14)';ctx.fill();
   ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
   ctx.fillStyle='#1a9c48';ctx.font='700 10px Inter';ctx.textAlign='center';
-  ctx.fillText('TRAMPA',trapX,trapY-trapR-6);ctx.textAlign='left';
+  ctx.fillText('',trapX,trapY-trapR-6);ctx.textAlign='left';
 }
 function dibujarBarrera(){
   const p=punta();
@@ -337,9 +336,15 @@ function dibujarParticulas(){
 function render(){fondo();dibujarBarrera();dibujarTrampa();dibujarParticulas();}
 
 function loop(){
-  const sigue=paso();render();
-  if(sigue&&animando)rafId=requestAnimationFrame(loop);
-  else{animando=false;finalizar();}
+  tiempoOla+=0.03*velocidad;
+  angulo+=(anguloObjetivo-angulo)*0.12;
+  if(Math.abs(anguloObjetivo-angulo)<0.05)angulo=anguloObjetivo;
+  if(animando){
+    const sigue=paso();
+    if(!sigue){animando=false;finalizar();}
+  }
+  render();
+  rafId=requestAnimationFrame(loop);
 }
 
 function conteo(){let cap=0,per=0;for(const q of particulas){if(q.estado==='captado')cap++;else if(q.estado==='perdido')per++;}return {cap,per};}
@@ -414,7 +419,7 @@ function correrComparador(){
 document.getElementById('segAng').addEventListener('click',e=>{
   const b=e.target.closest('.seg');if(!b)return;
   document.querySelectorAll('.seg').forEach(x=>x.classList.remove('activo'));
-  b.classList.add('activo');angulo=+b.dataset.ang;
+  b.classList.add('activo');anguloObjetivo=+b.dataset.ang;
   document.getElementById('angVal').textContent=angulo+'°';reset();
 });
 document.getElementById('vel').addEventListener('input',e=>{
@@ -427,20 +432,19 @@ document.getElementById('run').addEventListener('click',()=>{
   if(animando)return;iniciar();animando=true;
   const v=document.getElementById('veredicto');
   v.className='veredicto';v.innerHTML='Simulando trayectorias…';
-  loop();
 });
 document.getElementById('runComp').addEventListener('click',correrComparador);
 
 function reset(){
-  animando=false;if(rafId)cancelAnimationFrame(rafId);
-  iniciar();render();actualizarMarcador();
+  animando=false;
+  iniciar();actualizarMarcador();
   document.getElementById('capBar').style.width='0';
   const v=document.getElementById('veredicto');
   v.className='veredicto';v.innerHTML='Presiona <strong>Simular</strong> para lanzar los residuos.';
 }
 document.getElementById('reset').addEventListener('click',reset);
 
-iniciar();render();actualizarMarcador();
+iniciar();actualizarMarcador();loop();
 </script>
 </body>
 </html>

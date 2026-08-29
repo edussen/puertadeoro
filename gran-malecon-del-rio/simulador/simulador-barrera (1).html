@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador · Barrera flotante Puerta de Oro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --acento:#ff0e0e;--acento-oscuro:#cc0b0b;--acento-suave:#ffe7e7;
+    --exito:#22c55e;--exito-suave:#eafcef;
+    --error:#ef4444;
+    --advertencia:#f59e0b;--advertencia-suave:#fef6e7;
+    --info:#3b82f6;--info-suave:#eaf2fe;
+    --texto:#414141;--texto-suave:#555a61;--texto-tenue:#9aa0a6;
+    --borde:#d7dade;--borde-suave:#ecedee;
+    --superficie:#ffffff;--superficie-hover:#f4f5f6;--fondo:#fefeff;
+    --radio-sm:8px;--radio-md:12px;--radio-lg:16px;
+    --sombra-sm:0 2px 6px rgba(20,20,43,.06);
+    --sombra-md:0 10px 30px rgba(20,20,43,.12),0 2px 6px rgba(20,20,43,.06);
+    --transicion:all .18s ease;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--fondo);color:var(--texto);-webkit-font-smoothing:antialiased;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  .top{margin-bottom:24px;text-align:center}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:6px;background:var(--acento-suave);
+    color:var(--acento-oscuro);font-size:.72rem;font-weight:800;letter-spacing:.3px;
+    text-transform:uppercase;padding:5px 12px;border-radius:999px;margin-bottom:12px;
+  }
+  h1{font-size:1.6rem;font-weight:800;line-height:1.2;margin-bottom:8px;color:#2b2b2b}
+  .top p{color:var(--texto-suave);font-size:.92rem;line-height:1.55;max-width:680px;margin:0 auto}
+
+  .grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--superficie);border:1px solid var(--borde-suave);
+    border-radius:var(--radio-lg);box-shadow:var(--sombra-sm)}
+  .card-pad{padding:18px}
+  canvas{width:100%;height:auto;display:block;border-radius:var(--radio-md);background:#eef4f7}
+
+  .panel{display:flex;flex-direction:column;gap:18px}
+  .campo{display:flex;flex-direction:column;gap:8px}
+  .campo label{font-size:.8rem;font-weight:700;color:var(--texto-suave);
+    display:flex;justify-content:space-between;align-items:center}
+  .campo label .v{color:var(--acento-oscuro);font-weight:800;font-size:.82rem}
+  .segmentos{display:flex;background:var(--superficie);border:1px solid var(--borde-suave);
+    border-radius:999px;padding:4px;gap:2px;box-shadow:var(--sombra-sm)}
+  .seg{flex:1;background:transparent;border:none;color:var(--texto-suave);
+    padding:10px 0;border-radius:999px;font-size:.9rem;font-weight:700;
+    cursor:pointer;transition:var(--transicion)}
+  .seg:hover{color:var(--texto)}
+  .seg.activo{background:var(--acento);color:#fff;box-shadow:var(--sombra-sm)}
+  input[type=range]{width:100%;accent-color:var(--acento);cursor:pointer;height:6px}
+
+  .btn{border:none;border-radius:var(--radio-sm);padding:12px 18px;font-weight:700;
+    font-size:.92rem;cursor:pointer;transition:var(--transicion);display:inline-flex;
+    align-items:center;justify-content:center;gap:8px;font-family:inherit}
+  .btn-primario{background:var(--acento);color:#fff;box-shadow:var(--sombra-sm);width:100%}
+  .btn-primario:hover{background:var(--acento-oscuro)}
+  .btn-secundario{background:var(--superficie);color:var(--texto);border:1.5px solid var(--borde);width:100%}
+  .btn-secundario:hover{background:var(--superficie-hover)}
+
+  .stats{border-top:1px solid var(--borde-suave);padding-top:18px;display:flex;flex-direction:column;gap:14px}
+  .stat-row{display:flex;justify-content:space-between;align-items:center}
+  .stat-name{font-size:.82rem;font-weight:600;color:var(--texto-suave);display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .stat-num{font-size:1.5rem;font-weight:800;line-height:1}
+  .num-cap{color:var(--exito)}.num-per{color:var(--error)}
+  .prog{height:8px;border-radius:999px;background:var(--borde-suave);overflow:hidden}
+  .prog-fill{height:100%;background:var(--exito);width:0;border-radius:999px;transition:width .4s ease}
+
+  .veredicto{font-size:.82rem;line-height:1.55;padding:12px 14px;border-radius:var(--radio-md);
+    background:var(--info-suave);color:var(--texto-suave);border:1px solid #d3e4fd}
+  .veredicto strong{color:var(--info)}
+  .veredicto.ok{background:var(--exito-suave);border-color:#c3edd1}
+  .veredicto.ok strong{color:var(--exito)}
+  .veredicto.warn{background:var(--advertencia-suave);border-color:#f7e3ba}
+  .veredicto.warn strong{color:var(--advertencia)}
+
+  .comp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    margin-bottom:4px;flex-wrap:wrap}
+  .comp-head h2{font-size:1.05rem;font-weight:800;color:#2b2b2b}
+  .comp-head p{font-size:.82rem;color:var(--texto-suave);margin-top:2px;max-width:520px}
+  .comp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+  @media(max-width:640px){.comp-grid{grid-template-columns:repeat(2,1fr)}}
+  .comp-cell{border:1.5px solid var(--borde-suave);border-radius:var(--radio-md);
+    padding:14px;text-align:center;position:relative;transition:var(--transicion)}
+  .comp-cell.mejor{border-color:var(--exito);background:var(--exito-suave)}
+  .comp-cell.base{border-color:var(--borde);background:var(--superficie-hover)}
+  .comp-ang{font-size:.78rem;font-weight:700;color:var(--texto-suave);margin-bottom:8px}
+  .comp-pct{font-size:1.8rem;font-weight:800;color:#2b2b2b;line-height:1}
+  .comp-cell.mejor .comp-pct{color:var(--exito)}
+  .comp-label{font-size:.68rem;color:var(--texto-tenue);margin-top:6px;font-weight:600}
+  .comp-bar-track{height:6px;border-radius:999px;background:var(--borde-suave);margin-top:10px;overflow:hidden}
+  .comp-bar{height:100%;width:0;border-radius:999px;background:var(--acento);transition:width .6s ease}
+  .comp-cell.mejor .comp-bar{background:var(--exito)}
+  .badge-mejor{position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+    background:var(--exito);color:#fff;font-size:.6rem;font-weight:800;text-transform:uppercase;
+    letter-spacing:.3px;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .comp-veredicto{margin-top:16px;font-size:.85rem;line-height:1.55;padding:14px;
+    border-radius:var(--radio-md);background:var(--fondo);border:1px solid var(--borde-suave);color:var(--texto-suave)}
+  .comp-veredicto strong{color:var(--texto)}
+  .hint{font-size:.8rem;color:var(--texto-tenue);text-align:center;padding:20px}
+
+  .nota{margin-top:18px;font-size:.78rem;color:var(--texto-tenue);line-height:1.6;
+    background:var(--superficie);border:1px solid var(--borde-suave);
+    border-radius:var(--radio-md);padding:14px 16px}
+  .nota b{color:var(--texto-suave)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <h1>Simulador de barrera flotante pasiva</h1>
+    <p>Los residuos bajan con la corriente del Río Magdalena. Al tocar la barrera se deslizan a lo largo de ella hacia la trampa de recolección en la orilla, o escapan aguas abajo. Ajusta las variables y observa cuántos se captan.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card card-pad">
+      <canvas id="lienzo" width="600" height="440"></canvas>
+    </div>
+
+    <div class="card card-pad">
+      <div class="panel">
+        <div class="campo">
+          <label>Ángulo de la barrera <span class="v" id="angVal">45°</span></label>
+          <div class="segmentos" id="segAng">
+            <button class="seg" data-ang="30">30°</button>
+            <button class="seg activo" data-ang="45">45°</button>
+            <button class="seg" data-ang="60">60°</button>
+            <button class="seg" data-ang="90">90°</button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Velocidad de la corriente <span class="v" id="velVal">1.0 m/s</span></label>
+          <input type="range" id="vel" min="0.5" max="2.0" step="0.1" value="1.0">
+        </div>
+        <div class="campo">
+          <label>Cantidad de residuos <span class="v" id="cantVal">60</span></label>
+          <input type="range" id="cant" min="20" max="120" step="10" value="60">
+        </div>
+        <button class="btn btn-primario" id="run">▶ Simular</button>
+        <button class="btn btn-secundario" id="reset">Reiniciar</button>
+
+        <div class="stats">
+          <div>
+            <div class="stat-row">
+              <span class="stat-name"><span class="dot" style="background:var(--exito)"></span>Captados</span>
+              <span class="stat-num num-cap" id="capN">0</span>
+            </div>
+            <div class="prog" style="margin-top:8px"><div class="prog-fill" id="capBar"></div></div>
+          </div>
+          <div class="stat-row">
+            <span class="stat-name"><span class="dot" style="background:var(--error)"></span>Escapados</span>
+            <span class="stat-num num-per" id="perN">0</span>
+          </div>
+          <div class="veredicto" id="veredicto">Presiona <strong>Simular</strong> para lanzar los residuos.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-pad" style="margin-top:18px">
+    <div class="comp-head">
+      <div>
+        <h2>Comparador de ángulos</h2>
+        <p>Corre los cuatro ángulos con la misma corriente y cantidad para validar la hipótesis (≥ 20 puntos sobre los 90°).</p>
+      </div>
+      <button class="btn btn-secundario" style="width:auto;white-space:nowrap" id="runComp">⚡ Comparar los 4</button>
+    </div>
+    <div id="compBody">
+      <div class="hint">Presiona <b>Comparar los 4</b> para correr la prueba automática.</div>
+    </div>
+  </div>
+
+  <div class="nota">
+    <b>Sobre el modelo:</b> simulación conceptual en 2D, no una medición hidrodinámica. La barrera se ancla en el río y baja hasta la trampa en la orilla. Al chocar, el residuo se desliza a lo largo de la barrera hacia la orilla: la componente de velocidad <b>paralela</b> a la barrera lo canaliza, mientras la <b>normal</b> lo mantiene en contacto. Una barrera a 90° casi no tiene componente que canalice, así que los residuos se apilan y se desbordan aguas abajo. Los porcentajes ilustran el comportamiento de las fuerzas, no resultados experimentales medidos.
+  </div>
+
+</div>
+
+<script>
+const cv=document.getElementById('lienzo');
+const ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+
+const orillaX=70,rioIzq=orillaX,rioDer=W;
+const trapX=orillaX, trapY=H-70, trapR=42;
+const bAncX=orillaX, bAncY=trapY-8, largoBarrera=320;
+
+let angulo=45,velocidad=1.0,cantidad=60;
+let particulas=[],animando=false,rafId=null;
+
+function punta(){
+  const rad=angulo*Math.PI/180;
+  return {x:bAncX+Math.sin(rad)*largoBarrera, y:bAncY-Math.cos(rad)*largoBarrera};
+}
+const FORMAS=['circulo','cuadrado','triangulo','diamante'];
+function nueva(){
+  return {x:rioIzq+25+Math.random()*(rioDer-rioIzq-45),y:-Math.random()*220,
+    vx:0,r:3+Math.random()*3,estado:'flujo',contacto:0,alpha:1,
+    tono:Math.random()<0.5?'#8fb8c6':'#c9b892',
+    forma:FORMAS[Math.floor(Math.random()*FORMAS.length)],
+    rot:Math.random()*Math.PI*2};
+}
+function iniciar(){particulas=[];for(let i=0;i<cantidad;i++)particulas.push(nueva());}
+function rel(px,py){
+  const p=punta();const dx=p.x-bAncX,dy=p.y-bAncY;const len=Math.hypot(dx,dy);
+  const ux=dx/len,uy=dy/len;const t=((px-bAncX)*ux+(py-bAncY)*uy);
+  const cx=bAncX+ux*t,cy=bAncY+uy*t;const dist=(px-cx)*(-uy)+(py-cy)*(ux);
+  return {ux,uy,t,len,dist};
+}
+
+function pasoNucleo(){
+  const vBase=velocidad*1.6;let vivos=0;
+  const rad=angulo*Math.PI/180;const desliz=Math.cos(rad);
+  for(const q of particulas){
+    if(q.estado!=='flujo')continue;vivos++;
+    const r=rel(q.x,q.y);
+    const enRango=r.t>-6&&r.t<r.len;
+    const cerca=enRango&&Math.abs(r.dist)<(q.r+7);
+    if(cerca){
+      q.contacto++;
+      const canaliza=desliz*1.5+0.18;
+      q.x-=r.ux*vBase*canaliza;
+      q.y-=r.uy*vBase*canaliza;
+      q.y+=vBase*0.45;
+      const r2=rel(q.x,q.y);
+      const signo=r2.dist>=0?1:-1;
+      q.x-=(-r2.uy)*(r2.dist-signo*(q.r+5));
+      q.y-=(r2.ux)*(r2.dist-signo*(q.r+5));
+      const probEscape=(1-desliz)*0.018;
+      if(q.contacto>25&&Math.random()<probEscape)q.estado='perdido';
+    }else{q.y+=vBase;q.x+=q.vx;q.vx*=0.9;}
+    if(Math.hypot(q.x-trapX,q.y-trapY)<trapR)q.estado='captado';
+    if(q.y>H+12)q.estado='perdido';
+    if(q.x<orillaX+4)q.x=orillaX+4;
+    if(q.x>rioDer+12)q.estado='perdido';
+  }
+  return vivos>0;
+}
+
+function paso(){
+  for(const q of particulas){
+    if(q.estado==='captado')q.alpha=Math.max(0.25,q.alpha-0.006);
+    else if(q.estado==='perdido')q.alpha=Math.max(0,q.alpha-0.02);
+  }
+  const vivos=pasoNucleo();
+  actualizarMarcador();
+  return vivos;
+}
+
+function fondo(){
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#dfeef4');g.addColorStop(1,'#c7e0ea');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(90,140,160,0.14)';ctx.lineWidth=2;
+  for(let x=rioIzq+30;x<W;x+=55){
+    ctx.beginPath();
+    for(let y=0;y<H;y+=6){
+      const off=Math.sin((y*0.03)+(x*0.1)+(Date.now()*0.002))*3;
+      if(y===0)ctx.moveTo(x+off,y);else ctx.lineTo(x+off,y);
+    }
+    ctx.stroke();
+  }
+  ctx.fillStyle='rgba(80,120,140,0.55)';ctx.font='600 11px Inter';
+  ctx.fillText('corriente ↓',W-88,22);
+  ctx.fillStyle='#e4d7b4';ctx.fillRect(0,0,orillaX,H);
+  ctx.fillStyle='#d0bd8c';ctx.fillRect(orillaX-4,0,4,H);
+  ctx.fillStyle='rgba(120,100,60,0.10)';
+  for(let y=0;y<H;y+=14)ctx.fillRect(6,y,orillaX-16,5);
+  ctx.save();ctx.fillStyle='#a08a52';ctx.font='700 10px Inter';
+  ctx.translate(20,H-18);ctx.rotate(-Math.PI/2);
+  ctx.fillText('ORILLA · GRAN MALECÓN',0,0);ctx.restore();
+}
+function dibujarTrampa(){
+  ctx.beginPath();ctx.arc(trapX,trapY,trapR,0,Math.PI*2);
+  ctx.fillStyle='rgba(34,197,94,0.14)';ctx.fill();
+  ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#1a9c48';ctx.font='700 10px Inter';ctx.textAlign='center';
+  ctx.fillText('TRAMPA',trapX,trapY-trapR-6);ctx.textAlign='left';
+}
+function dibujarBarrera(){
+  const p=punta();
+  ctx.strokeStyle='rgba(0,0,0,0.18)';ctx.lineWidth=10;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(bAncX,bAncY+3);ctx.lineTo(p.x,p.y+3);ctx.stroke();
+  ctx.strokeStyle='#ff0e0e';ctx.lineWidth=8;
+  ctx.beginPath();ctx.moveTo(bAncX,bAncY);ctx.lineTo(p.x,p.y);ctx.stroke();
+  const n=12;
+  for(let i=0;i<=n;i++){
+    const fx=bAncX+(p.x-bAncX)*i/n,fy=bAncY+(p.y-bAncY)*i/n;
+    ctx.beginPath();ctx.arc(fx,fy,4,0,Math.PI*2);
+    ctx.fillStyle='#ff5a5a';ctx.fill();ctx.strokeStyle='#cc0b0b';ctx.lineWidth=1;ctx.stroke();
+  }
+  ctx.beginPath();ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fillStyle='#8a1010';ctx.fill();
+}
+function dibujarForma(q){
+  const r=q.r;
+  switch(q.forma){
+    case 'cuadrado':
+      ctx.rotate(q.rot);ctx.fillRect(-r,-r,r*2,r*2);
+      break;
+    case 'triangulo':
+      ctx.rotate(q.rot);
+      ctx.beginPath();
+      ctx.moveTo(0,-r*1.15);ctx.lineTo(r*1.05,r*0.8);ctx.lineTo(-r*1.05,r*0.8);
+      ctx.closePath();ctx.fill();
+      break;
+    case 'diamante':
+      ctx.rotate(q.rot);
+      ctx.beginPath();
+      ctx.moveTo(0,-r*1.2);ctx.lineTo(r*1.2,0);ctx.lineTo(0,r*1.2);ctx.lineTo(-r*1.2,0);
+      ctx.closePath();ctx.fill();
+      break;
+    default:
+      ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+  }
+}
+function dibujarParticulas(){
+  for(const q of particulas){
+    if(q.alpha<=0)continue;
+    ctx.globalAlpha=q.alpha;
+    if(q.estado==='captado')ctx.fillStyle='#22c55e';
+    else if(q.estado==='perdido')ctx.fillStyle='#ef4444';
+    else ctx.fillStyle=q.tono;
+    ctx.save();ctx.translate(q.x,q.y);dibujarForma(q);ctx.restore();
+    ctx.globalAlpha=1;
+  }
+}
+function render(){fondo();dibujarBarrera();dibujarTrampa();dibujarParticulas();}
+
+function loop(){
+  const sigue=paso();render();
+  if(sigue&&animando)rafId=requestAnimationFrame(loop);
+  else{animando=false;finalizar();}
+}
+
+function conteo(){let cap=0,per=0;for(const q of particulas){if(q.estado==='captado')cap++;else if(q.estado==='perdido')per++;}return {cap,per};}
+function actualizarMarcador(){
+  const {cap,per}=conteo();
+  document.getElementById('capN').textContent=cap;
+  document.getElementById('perN').textContent=per;
+  document.getElementById('capBar').style.width=(cap/cantidad*100)+'%';
+}
+function finalizar(){
+  const {cap,per}=conteo();const total=cap+per;
+  const pct=total?Math.round(cap/cantidad*100):0;
+  const v=document.getElementById('veredicto');
+  if(angulo===90){
+    v.className='veredicto warn';
+    v.innerHTML=`Barrera <strong>perpendicular (90°)</strong>: captación del <strong>${pct}%</strong>. Casi no canaliza; los residuos se apilan y escapan. Es la referencia a superar.`;
+  }else{
+    v.className=pct>=25?'veredicto ok':'veredicto';
+    v.innerHTML=`Ángulo <strong>${angulo}°</strong> · ${velocidad.toFixed(1)} m/s → captación del <strong>${pct}%</strong>. La componente paralela desliza los residuos hacia la trampa.`;
+  }
+}
+
+function simularHeadless(ang){
+  const gAng=angulo,gPart=particulas;
+  angulo=ang;iniciar();
+  let guard=0,vivos=true;
+  while(vivos&&guard<8000){vivos=pasoNucleo();guard++;}
+  const {cap}=conteo();const pct=Math.round(cap/cantidad*100);
+  angulo=gAng;particulas=gPart;
+  return pct;
+}
+function correrComparador(){
+  const angs=[30,45,60,90];
+  const res=angs.map(a=>{
+    let s=0;for(let k=0;k<3;k++)s+=simularHeadless(a);
+    return {ang:a,pct:Math.round(s/3)};
+  });
+  const base=res.find(r=>r.ang===90).pct;
+  const noNoventa=res.filter(r=>r.ang!==90);
+  const mejor=noNoventa.reduce((a,b)=>b.pct>a.pct?b:a);
+  const maxPct=Math.max(...res.map(r=>r.pct),1);
+  const mejora=mejor.pct-base;
+
+  let html='<div class="comp-grid">';
+  for(const r of res){
+    const esMejor=r.ang===mejor.ang;
+    const esBase=r.ang===90;
+    const cls=esMejor?'comp-cell mejor':(esBase?'comp-cell base':'comp-cell');
+    const label=esBase?'referencia':(esMejor?'óptimo':'&nbsp;');
+    html+=`<div class="${cls}">`;
+    if(esMejor)html+='<span class="badge-mejor">Mejor</span>';
+    html+=`<div class="comp-ang">${r.ang}°</div><div class="comp-pct">${r.pct}%</div>
+           <div class="comp-label">${label}</div>
+           <div class="comp-bar-track"><div class="comp-bar" data-w="${(r.pct/maxPct*100)}"></div></div></div>`;
+  }
+  html+='</div>';
+  const cumple=mejora>=20;
+  const borde=cumple?'#c3edd1':'#f7e3ba';
+  const bg=cumple?'var(--exito-suave)':'var(--advertencia-suave)';
+  html+=`<div class="comp-veredicto" style="border-color:${borde};background:${bg}">`;
+  if(cumple){
+    html+=`✓ <strong>Hipótesis respaldada.</strong> A ${mejor.ang}° se captó <strong>${mejor.pct}%</strong> frente a <strong>${base}%</strong> de la barrera perpendicular: una mejora de <strong>${mejora} puntos porcentuales</strong> (objetivo ≥ 20). Evaluado a ${velocidad.toFixed(1)} m/s con ${cantidad} residuos.`;
+  }else{
+    html+=`A ${mejor.ang}° se captó <strong>${mejor.pct}%</strong> frente a <strong>${base}%</strong> a 90° (mejora de ${mejora} puntos, bajo el objetivo de 20). Prueba con otra velocidad.`;
+  }
+  html+='</div>';
+  const body=document.getElementById('compBody');
+  body.innerHTML=html;
+  requestAnimationFrame(()=>{body.querySelectorAll('.comp-bar').forEach(b=>b.style.width=b.dataset.w+'%');});
+}
+
+document.getElementById('segAng').addEventListener('click',e=>{
+  const b=e.target.closest('.seg');if(!b)return;
+  document.querySelectorAll('.seg').forEach(x=>x.classList.remove('activo'));
+  b.classList.add('activo');angulo=+b.dataset.ang;
+  document.getElementById('angVal').textContent=angulo+'°';reset();
+});
+document.getElementById('vel').addEventListener('input',e=>{
+  velocidad=+e.target.value;document.getElementById('velVal').textContent=velocidad.toFixed(1)+' m/s';
+});
+document.getElementById('cant').addEventListener('input',e=>{
+  cantidad=+e.target.value;document.getElementById('cantVal').textContent=cantidad;reset();
+});
+document.getElementById('run').addEventListener('click',()=>{
+  if(animando)return;iniciar();animando=true;
+  const v=document.getElementById('veredicto');
+  v.className='veredicto';v.innerHTML='Simulando trayectorias…';
+  loop();
+});
+document.getElementById('runComp').addEventListener('click',correrComparador);
+
+function reset(){
+  animando=false;if(rafId)cancelAnimationFrame(rafId);
+  iniciar();render();actualizarMarcador();
+  document.getElementById('capBar').style.width='0';
+  const v=document.getElementById('veredicto');
+  v.className='veredicto';v.innerHTML='Presiona <strong>Simular</strong> para lanzar los residuos.';
+}
+document.getElementById('reset').addEventListener('click',reset);
+
+iniciar();render();actualizarMarcador();
+</script>
+</body>
+</html>
